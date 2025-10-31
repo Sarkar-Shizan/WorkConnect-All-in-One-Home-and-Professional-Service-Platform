@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
@@ -96,3 +97,7 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+=======
+# WorkConnect-All-in-One-Home-and-Professional-Service-Platform
+WorkConnect is a full-stack SaaS platform designed to connect users with verified service providers for various home and professional needs — including painting, plumbing, electrical repair, cleaning, and moving services.
+>>>>>>> 5ec3c3011936a6a4344f826c669634f5de38fe0e
