@@ -127,4 +127,9 @@ export class ProviderService {
     });
     return this.findServicesById(id);
   }
+  deleteService(id: number) {
+    const deletedService = this.findServicesById(id);
+    this.services = this.services.filter((service) => service.id !== id);
+    return deletedService;
+  }
 }
