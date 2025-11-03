@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Injectable()
 export class ProviderService {
@@ -28,7 +29,7 @@ export class ProviderService {
     {
       id: 1,
       serviceName: 'Healthcare',
-      providerName: 'Jenkins Inc',
+      providerName: 'DMC',
       price: 450.75,
     },
     {
@@ -46,7 +47,7 @@ export class ProviderService {
     {
       id: 4,
       serviceName: 'Healthcare',
-      providerName: 'Kuhic Group',
+      providerName: 'SHBI',
       price: 99.99,
     },
     {
@@ -84,7 +85,6 @@ export class ProviderService {
       | 'IT Consulting'
       | 'Web Development',
   ) {
-    // If a query is provided, filter by it
     if (serviceName) {
       const filtered = this.services.filter(
         (service) => service.serviceName === serviceName,
@@ -99,7 +99,32 @@ export class ProviderService {
       return filtered;
     }
 
-    // Otherwise return all
     return this.services;
+  }
+  findServicesById(id: number) {
+    const service = this.services.find((service) => service.id === id);
+    if (!service)
+      throw new NotFoundException(`Services with ID ${id} not found!`);
+    return service;
+  }
+  findServicesByProviderId(id: number) {
+    const serviceByProvider = this.providers.find(
+      (provider) => provider.id === id,
+    );
+    if (!serviceByProvider)
+      throw new NotFoundException(`Providers with ID ${id} not found!`);
+    return serviceByProvider;
+  }
+  updateService(id: number, updateServiceDto: UpdateServiceDto) {
+    this.services = this.services.map((service) => {
+      if (service.id === id) {
+        return {
+          ...service,
+          ...updateServiceDto,
+        };
+      }
+      return service;
+    });
+    return this.findServicesById(id);
   }
 }
