@@ -132,4 +132,20 @@ export class ProviderService {
     this.services = this.services.filter((service) => service.id !== id);
     return deletedService;
   }
+  updateFullService(id: number, updateServiceDto: UpdateServiceDto) {
+    const updatedService = this.services.findIndex(
+      (service) => service.id === id,
+    );
+    if (!updatedService) {
+      throw new NotFoundException(`Service with ID ${id} not found!`);
+    }
+    this.services[updatedService] = {
+      id,
+      ...updateServiceDto,
+    };
+    return {
+      message: `Service with ID ${id} has been fully updated.`,
+      updatedService: this.services[updatedService],
+    };
+  }
 }
