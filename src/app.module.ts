@@ -7,6 +7,6 @@ import { ProviderModule } from './provider/provider.module';
 @Module({
   imports: [CustomerModule, AdminModule, WorkerModule, ProviderModule],
   controllers: [],
-  providers:[],
+  providers: [],
 })
 export class AppModule {}
