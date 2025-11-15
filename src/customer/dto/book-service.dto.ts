@@ -1,6 +1,5 @@
 export class BookServiceByCustomerDto {
     serviceId: number;
-    customerId: number;
     serviceCategory: string;
     serviceAddress: string;
     serviceDate: string;
