@@ -18,9 +18,9 @@ export class CustomerController {
    return this.customerService.registerCustomer(registerCustomer);
  }
 
- @Patch('update-phone/:customerId')
-  updatePhoneNumber(@Param('customerId',ParseIntPipe) customerId: number, @Body('phoneNumber') phoneNumber: number): Promise<CustomerEntity> {
-  return this.customerService.updatePhoneNumber(customerId, phoneNumber);
+ @Patch('update-phone/:email')
+  updatePhoneNumber(@Param('email') email: string, @Body('phoneNumber') phoneNumber: number): Promise<CustomerEntity> {
+  return this.customerService.updatePhoneNumber(email, phoneNumber);
   }
 
   @Get('null-name')
@@ -32,7 +32,10 @@ export class CustomerController {
     deleteCustomerAccount(@Param('customerId',ParseIntPipe) customerId: number) {
         return this.customerService.deleteCustomerAccount(customerId);
     }   
- 
+ @Get('all')
+ getAllCustomers(): Promise<CustomerEntity[]> {
+   return this.customerService.getAllCustomers();
+ }
     
  @Post('login')
  loginCustomer(@Body() loginCustomer: LoginCustomerDto ): object {

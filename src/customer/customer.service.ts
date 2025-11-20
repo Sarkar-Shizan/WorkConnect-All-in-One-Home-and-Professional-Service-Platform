@@ -22,13 +22,14 @@ export class CustomerService {
       throw new BadRequestException('Email or phone number already exists.');
     }
   const newCustomer = this.customerRepository.create(registerCustomer);
-  return await this.customerRepository.save(newCustomer); 
+  const savedCustomer = await this.customerRepository.save(newCustomer);
+  return savedCustomer; 
   }
 
    //-----update phone number------
 
-   async updatePhoneNumber(customerId: number, newPhoneNumber: number): Promise<CustomerEntity> {
-    const customer = await this.customerRepository.findOneBy({ id: customerId });
+   async updatePhoneNumber(email: string, newPhoneNumber: number): Promise<CustomerEntity> {
+    const customer = await this.customerRepository.findOneBy({ email: email });
     if (!customer) throw new BadRequestException(`Customer not found`);
     if (customer.phoneNumber === newPhoneNumber) 
         throw new BadRequestException(`New phone number is the same as current`);
@@ -50,7 +51,6 @@ export class CustomerService {
   });
 }
 
-
     //-------- Delete customer account --------
 async deleteCustomerAccount(customerId: number): Promise<object> {
   // Check if customer exists first
@@ -60,6 +60,14 @@ async deleteCustomerAccount(customerId: number): Promise<object> {
   await this.customerRepository.delete(customerId);
   return {message:`Customer account with id ${customerId} deleted successfully`};
 }
+
+//---------------get all customers-----------
+    async getAllCustomers(): Promise<CustomerEntity[]> {
+        return await this.customerRepository.find({
+            select: ['id', 'email', 'phoneNumber', 'isActive']
+        });
+    }
+
 
 
     //login customer

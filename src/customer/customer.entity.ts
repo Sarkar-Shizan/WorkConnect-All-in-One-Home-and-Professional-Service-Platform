@@ -1,9 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert } from "typeorm";
-import * as bycrpt from 'bcrypt';
+import { Entity, PrimaryColumn, Column, BeforeInsert } from "typeorm";
 
  @Entity("customers")
  export class CustomerEntity{
- @PrimaryGeneratedColumn()
+ @PrimaryColumn()
  id: number;
 
  @Column({ name: "fullname" , type: "varchar", nullable: true })
@@ -22,7 +21,8 @@ import * as bycrpt from 'bcrypt';
  isActive: boolean;
 
  @BeforeInsert()
-  async hashPassword() {
-    this.password = await bycrpt.hash(this.password, 10);
-  }
+ generateId() {
+  this.id = Math.floor( Math.random() * 900000);
+ }
+  
 }
