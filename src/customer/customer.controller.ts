@@ -23,7 +23,7 @@ export class CustomerController {
   return this.customerService.updatePhoneNumber(email, phoneNumber);
   }
 
-  @Get('null-name')
+ @Get('null-name')
   getCustomerByNullName() {
   return this.customerService.getCustomerByNullName();
 }
@@ -39,11 +39,11 @@ export class CustomerController {
     
  @Post('login')
  loginCustomer(@Body() loginCustomer: LoginCustomerDto ): object {
-   console.log(loginCustomer.phoneNumber);
+   console.log(loginCustomer.email);
    return this.customerService.loginCustomer(loginCustomer);
  }
- @Get('profile/:customerId')
- getCustomerProfile(@Param('customerId',ParseIntPipe) customerId: number) {
+ @Get('profile')
+ getCustomerProfile(@Query('customerId',ParseIntPipe) customerId: number) {
    return this.customerService.getCustomerProfile(customerId);
  }
 

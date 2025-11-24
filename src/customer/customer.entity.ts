@@ -1,14 +1,15 @@
-import { Entity, PrimaryColumn, Column, BeforeInsert } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert } from "typeorm";
+import * as bcrypt from 'bcrypt';
 
  @Entity("customers")
  export class CustomerEntity{
- @PrimaryColumn()
+ @PrimaryGeneratedColumn()
  id: number;
 
  @Column({ name: "fullname" , type: "varchar", nullable: true })
  name: string;
 
- @Column()
+ @Column({ unique: true })
  email: string;
 
  @Column({type:"bigint" , unsigned:true })
@@ -21,8 +22,7 @@ import { Entity, PrimaryColumn, Column, BeforeInsert } from "typeorm";
  isActive: boolean;
 
  @BeforeInsert()
- generateId() {
-  this.id = Math.floor( Math.random() * 900000);
- }
-  
+    async hashPassword() {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
 }

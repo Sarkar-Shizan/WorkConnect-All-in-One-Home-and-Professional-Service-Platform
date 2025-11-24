@@ -68,8 +68,6 @@ async deleteCustomerAccount(customerId: number): Promise<object> {
         });
     }
 
-
-
     //login customer
     loginCustomer(loginCustomer: object): object {
         return { message: 'Customer logged in successfully', data: loginCustomer };
