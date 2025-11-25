@@ -7,10 +7,13 @@ import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { LoginCustomerDto } from './dto/login-customer.dto';
 import * as bcrypt from 'bcrypt';
+import { ServiceBookingEntity } from '../service-booking/service-booking.entity';
+import { CustomerProfileEntity } from '../profile/profile.entity';
 
 @Injectable()
 export class CustomerService {
-  constructor(@InjectRepository(CustomerEntity) private customerRepository: Repository<CustomerEntity>) {}
+  constructor(@InjectRepository(CustomerEntity) private customerRepository: Repository<CustomerEntity>, @InjectRepository(ServiceBookingEntity)
+    private bookingRepository: Repository<ServiceBookingEntity>,@InjectRepository(CustomerProfileEntity) private profileRepo: Repository<CustomerProfileEntity>) {}
 
    //-----Register customer-------
     async registerCustomer(registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
@@ -57,7 +60,7 @@ export class CustomerService {
   if (!customer) throw new NotFoundException(`Customer with ID ${id} not found`);
   const replacedCustomer = this.customerRepository.merge(customer, registerCustomer);
   if (registerCustomer.password) {
-    replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);
+    replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);// Hash new password if provided
   }
   return await this.customerRepository.save(replacedCustomer);
 }
@@ -71,8 +74,9 @@ export class CustomerService {
     if (!customer) throw new NotFoundException(`Customer with ID ${id} not found`);
 
     const updatedCustomer = this.customerRepository.merge(customer, updateCustomer);
+
     if (updateCustomer.password) {
-      updatedCustomer.password = await bcrypt.hash(updateCustomer.password, 10);
+      updatedCustomer.password = await bcrypt.hash(updateCustomer.password, 10);// Hash new password if provided
     }
       // Update profile image if uploaded
   if (profileImage) {
@@ -90,22 +94,22 @@ export class CustomerService {
 
   }
 
-  //----- Delete customer -------
-// CustomerService.ts
-async deleteCustomer(id: number): Promise<object> {
+async deleteCustomer(id: number): Promise<{ message: string }> {
   const customer = await this.customerRepository.findOne({
     where: { id },
-    relations: ['profile', 'bookings'], // load related entities
+    relations: ['profile', 'bookings'],
   });
 
   if (!customer) throw new NotFoundException('Customer not found');
 
-  await this.customerRepository.remove(customer); // removes entity and triggers cascade on profile + bookings
- 
+  if (customer.bookings && customer.bookings.some((booking) => booking.status === 'Booked')) {
+    throw new BadRequestException('Cannot delete customer with active bookings');
+  }
+
+  await this.customerRepository.remove(customer);
+  
+
   return { message: `Customer with ID ${id} deleted successfully` };
 }
-
-
-
 
 }

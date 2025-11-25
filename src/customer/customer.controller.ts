@@ -75,19 +75,4 @@ async updateCustomer(
     res.sendFile(filename, { root: './uploads' });
   }
 
-  // //9) service details / booking (kept)
-  // @Get('services')
-  // getServiceDetails(@Query() services: object) {
-  //   return this.customerService.getServiceDetails(services);
-  // }
-
-  // @Post('book-service')
-  // bookService(@Body() bookService: object) {
-  //   return this.customerService.bookService(bookService);
-  // }
-
-  // @Patch('cancel-service/:serviceId')
-  // cancelServiceBooking(@Param('serviceId', ParseIntPipe) serviceId: number) {
-  //   return this.customerService.cancelServiceBooking(serviceId);
-  // }
 }

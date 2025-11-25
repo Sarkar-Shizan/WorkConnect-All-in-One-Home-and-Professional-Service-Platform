@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne,JoinColumn } from 'typeorm';
 import { CustomerEntity } from '../customer/customer.entity';
 
 @Entity('service_bookings')
@@ -15,25 +15,11 @@ export class ServiceBookingEntity {
   @Column('date')
   serviceDate: string;
 
-  @Column('time')
-  serviceTime: string;
-
-  @Column({ nullable: true })
-  serviceDescription: string;
-
-  @Column()
-  servicePackage: string;
-
-  @Column('decimal', { precision: 10, scale: 2 })
-  totalCost: number;
-
-  @Column()
-  paymentMethod: string;
-
-  @Column({ default: 'Pending' })
+  @Column({ default: 'Booked' })
   status: string;
 
-  @ManyToOne(() => CustomerEntity, customer => customer.bookings)
+  @ManyToOne(() => CustomerEntity, customer => customer.bookings,{ onDelete: "CASCADE" })
+  @JoinColumn()
   customer: CustomerEntity;
 
 }

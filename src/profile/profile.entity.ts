@@ -1,6 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn} from 'typeorm';
 import { CustomerEntity } from '../customer/customer.entity';
-import { JoinColumn } from 'typeorm';
 
 @Entity('customer_profiles')
 export class CustomerProfileEntity {
@@ -16,8 +15,8 @@ export class CustomerProfileEntity {
   @Column({ nullable: true })
   address: string;
 
- @OneToOne(() => CustomerEntity, customer => customer.profile, { onDelete: 'CASCADE' })
+ @OneToOne(() => CustomerEntity, customer => customer.profile, {onDelete: 'CASCADE'} )
  @JoinColumn()
-customer: CustomerEntity; 
+ customer: CustomerEntity; 
 
 }

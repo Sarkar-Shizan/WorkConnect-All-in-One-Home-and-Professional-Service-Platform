@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, OneToOne ,OneToMany ,JoinColumn} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, OneToOne ,OneToMany } from "typeorm";
 import * as bcrypt from 'bcrypt';
 import { CustomerProfileEntity } from "../profile/profile.entity";
 import { ServiceBookingEntity } from "../service-booking/service-booking.entity";
@@ -27,15 +27,11 @@ import { ServiceBookingEntity } from "../service-booking/service-booking.entity"
     async hashPassword() {
         this.password = await bcrypt.hash(this.password, 10);
     }
-@OneToOne(() => CustomerProfileEntity, profile => profile.customer, {
-  cascade: true       // propagate save/remove // database deletes profile when customer is deleted
-})          // owning side
+
+@OneToOne(() => CustomerProfileEntity, profile => profile.customer, {cascade: true} )
 profile: CustomerProfileEntity;
 
-@OneToMany(() => ServiceBookingEntity, booking => booking.customer, {
-  cascade: true
-  // deletes bookings when customer is deleted
-})
+@OneToMany(() => ServiceBookingEntity, booking => booking.customer, {cascade: true} )
 bookings: ServiceBookingEntity[];
 
 }
