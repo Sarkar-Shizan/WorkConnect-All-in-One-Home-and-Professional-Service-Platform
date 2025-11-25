@@ -1,98 +1,93 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UsePipes, ValidationPipe , UseInterceptors,UploadedFile, ParseIntPipe, Res} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UsePipes, UseInterceptors, UploadedFile, ParseIntPipe, Res, ValidationPipe} from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { LoginCustomerDto } from './dto/login-customer.dto';
+import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { BookServiceByCustomerDto } from './dto/book-service.dto';
-import { ServiceDetailsDto } from './dto/services.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage, MulterError } from 'multer';
-import { CustomerEntity } from './customer.entity';
-
 
 @Controller('customer')
 export class CustomerController {
- constructor(private readonly customerService :CustomerService) {}
+  constructor(private readonly customerService: CustomerService) {}
 
- @Post('register')
- registerCustomer(@Body() registerCustomer: CustomerEntity): Promise<CustomerEntity>{
-   return this.customerService.registerCustomer(registerCustomer);
- }
-
- @Patch('update-phone/:email')
-  updatePhoneNumber(@Param('email') email: string, @Body('phoneNumber') phoneNumber: number): Promise<CustomerEntity> {
-  return this.customerService.updatePhoneNumber(email, phoneNumber);
+  // 1) POST /customer/register  (ValidationPipe applied via global or per-route)
+  @Post('register')
+  @UsePipes(new ValidationPipe())
+  async registerCustomer(@Body() dto: RegisterCustomerDto) {
+    return await this.customerService.registerCustomer(dto);
   }
 
- @Get('null-name')
-  getCustomerByNullName() {
-  return this.customerService.getCustomerByNullName();
+  // 2) POST /customer/login
+  @Post('login')
+  @UsePipes(new ValidationPipe())
+  async loginCustomer(@Body() dto: LoginCustomerDto) {
+    return await this.customerService.loginCustomer(dto);
+  }
+
+  // 3) GET /customer/all
+  @Get('all')
+  async getAllCustomers() {
+    return await this.customerService.getAllCustomers();
+  }
+
+  // 4) GET/customer/profile?id=1
+  @Get('profile')
+  async getCustomerById(@Query('id', ParseIntPipe) id: number) {
+    return await this.customerService.getCustomerById(id);
+  }
+
+  // 5) PUT /customer/:id  (full replace)
+  @Put('replace-profile/:id')
+  async replaceCustomer(@Param('id', ParseIntPipe) id: number, @Body() dto: RegisterCustomerDto) {
+    return await this.customerService.replaceCustomer(id, dto);
+  }
+
+  // 6) PATCH /customer/:id   (partial update)
+  @Patch('update-profile/:id')
+  @UseInterceptors(FileInterceptor('profileImage', {
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.match(/^.*\.(jpg|jpeg|png)$/)) cb(null, true);
+    else cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'Only JPG, JPEG, PNG allowed!'), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  storage: diskStorage({
+    destination: './uploads',
+    filename: (req, file, cb) => {
+      const uniqueName = Date.now() + '-' + file.originalname;
+      cb(null, uniqueName);
+    },
+  }),
+}))
+async updateCustomer(
+  @Param('id', ParseIntPipe) id: number, @Body(new ValidationPipe()) dto: UpdateCustomerDto, @UploadedFile() profileImage: Express.Multer.File,) {
+  return await this.customerService.updateCustomer(id, dto, profileImage);
 }
 
- @Delete('delete-account/:customerId')
-    deleteCustomerAccount(@Param('customerId',ParseIntPipe) customerId: number) {
-        return this.customerService.deleteCustomerAccount(customerId);
-    }   
- @Get('all')
- getAllCustomers(): Promise<CustomerEntity[]> {
-   return this.customerService.getAllCustomers();
- }
-    
- @Post('login')
- loginCustomer(@Body() loginCustomer: LoginCustomerDto ): object {
-   console.log(loginCustomer.email);
-   return this.customerService.loginCustomer(loginCustomer);
- }
- @Get('profile')
- getCustomerProfile(@Query('customerId',ParseIntPipe) customerId: number) {
-   return this.customerService.getCustomerProfile(customerId);
- }
-
- @Put('update-profile/:customerId')
- @UseInterceptors(FileInterceptor('idProof', {
-    fileFilter: (req, file, cb) => {
-      if (file.originalname.match(/^.*\.(pdf)$/))
-        cb(null, true);
-      else {
-        cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'pdf'), false);
-      }
-    },
-    limits: { fileSize: 5*1024*1024}, //5 MB
-    storage: diskStorage({
-      destination: './uploads',
-      filename: function (req, file, cb) {
-        cb(null,file.originalname);
-      },
-    })
- }))
- @UsePipes(new ValidationPipe())
-    updateCustomerProfile(@Param('customerId', ParseIntPipe) customerId: number, @Body() updateCustomer: UpdateCustomerDto , @UploadedFile() idProof:Express.Multer.File): object {
-        console.log('Updated Data:',updateCustomer);
-        console.log('Uploaded File:', idProof);
-        return this.customerService.updateCustomerProfile(customerId, updateCustomer, idProof);
-    }
-    
-  @Get('uploads/:filename')  
-  serveFile(@Param('filename') filename: string, @Res() res): void {
+  // 7) DELETE /customer/:id
+  @Delete('delete-account/:id')
+  async deleteCustomer(@Param('id', ParseIntPipe) id: number) {
+    return await this.customerService.deleteCustomer(id);
+  }
+  
+ // 8) Serve uploaded profile images
+  @Get('uploads/:filename')
+  serveFile(@Param('filename') filename: string, @Res() res) {
     res.sendFile(filename, { root: './uploads' });
   }
 
- @Get('services')
-    getServiceDetails(@Query() services: ServiceDetailsDto): object {
-    console.log(services.serviceCategory);
-    return this.customerService.getServiceDetails(services);
-   }
+  // //9) service details / booking (kept)
+  // @Get('services')
+  // getServiceDetails(@Query() services: object) {
+  //   return this.customerService.getServiceDetails(services);
+  // }
 
- @Post('book-service')
-    bookService(@Body() bookService: BookServiceByCustomerDto) {
-        console.log(bookService.serviceCategory);
-        return this.customerService.bookService(bookService);
-    }
- @Patch('cancel-service/:serviceId')
-    cancelServiceBooking(@Param('serviceId',ParseIntPipe) serviceId: number) {
-        return this.customerService.cancelServiceBooking(serviceId);
-    }
+  // @Post('book-service')
+  // bookService(@Body() bookService: object) {
+  //   return this.customerService.bookService(bookService);
+  // }
 
- 
+  // @Patch('cancel-service/:serviceId')
+  // cancelServiceBooking(@Param('serviceId', ParseIntPipe) serviceId: number) {
+  //   return this.customerService.cancelServiceBooking(serviceId);
+  // }
 }
-
-

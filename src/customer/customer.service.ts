@@ -1,16 +1,19 @@
-import { Injectable , BadRequestException } from '@nestjs/common';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { CustomerEntity } from './customer.entity';
+// src/customer/customer.service.ts
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { CustomerEntity } from './customer.entity';
+import { RegisterCustomerDto } from './dto/register-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { LoginCustomerDto } from './dto/login-customer.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class CustomerService {
-    constructor(@InjectRepository(CustomerEntity) private customerRepository: Repository<CustomerEntity>){}
+  constructor(@InjectRepository(CustomerEntity) private customerRepository: Repository<CustomerEntity>) {}
 
-    //----- register customer-------
-
-    async registerCustomer(registerCustomer: CustomerEntity): Promise<CustomerEntity> {
+   //-----Register customer-------
+    async registerCustomer(registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
     // Check if email or phone already exists
     const exists = await this.customerRepository.findOne({
       where: [
@@ -26,71 +29,83 @@ export class CustomerService {
   return savedCustomer; 
   }
 
-   //-----update phone number------
+  //----- Login customer -------
+  async loginCustomer(loginCustomer: LoginCustomerDto): Promise<CustomerEntity> {
+    const customer = await this.customerRepository.findOneBy({ email: loginCustomer.email });
+    if (!customer) throw new NotFoundException('Customer not found with this email!');
+    const isPasswordValid = await bcrypt.compare(loginCustomer.password, customer.password);
+    if (!isPasswordValid) throw new BadRequestException('Invalid Password');
+    return customer;
+  }
 
-   async updatePhoneNumber(email: string, newPhoneNumber: number): Promise<CustomerEntity> {
-    const customer = await this.customerRepository.findOneBy({ email: email });
-    if (!customer) throw new BadRequestException(`Customer not found`);
-    if (customer.phoneNumber === newPhoneNumber) 
-        throw new BadRequestException(`New phone number is the same as current`);
-    
-    const existing = await this.customerRepository.findOneBy({ phoneNumber: newPhoneNumber });
-    if (existing) throw new BadRequestException(`Phone number already in use`);
+  //----- Get all customers -------
+  async getAllCustomers(): Promise<CustomerEntity[]> {
+    return await this.customerRepository.find();
+  }
 
-    customer.phoneNumber = newPhoneNumber;
-    return await this.customerRepository.save(customer);
+  //----- Get customer by ID -------
+  async getCustomerById(id: number): Promise<CustomerEntity> {
+    const customer = await this.customerRepository.findOneBy({ id });
+    if (!customer) throw new NotFoundException('Customer not found');
+    return customer;
+  }
+
+
+  //----- Replace customer -------
+ async replaceCustomer(id: number, registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
+  const customer = await this.customerRepository.findOneBy({ id });
+  if (!customer) throw new NotFoundException(`Customer with ID ${id} not found`);
+  const replacedCustomer = this.customerRepository.merge(customer, registerCustomer);
+  if (registerCustomer.password) {
+    replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);
+  }
+  return await this.customerRepository.save(replacedCustomer);
 }
 
-  //----------get customer by null Name-------
-  async getCustomerByNullName(): Promise<CustomerEntity[]> {
-  return await this.customerRepository.find({
-    where: [
-      { name: IsNull() },
-      { name: "" }
-    ],
+  //----- Update customer -------
+  async updateCustomer(id: number, updateCustomer: UpdateCustomerDto, profileImage?: Express.Multer.File): Promise<CustomerEntity> {
+    const customer = await this.customerRepository.findOne({
+      where: { id },
+      relations: ['profile'],
+    });
+    if (!customer) throw new NotFoundException(`Customer with ID ${id} not found`);
+
+    const updatedCustomer = this.customerRepository.merge(customer, updateCustomer);
+    if (updateCustomer.password) {
+      updatedCustomer.password = await bcrypt.hash(updateCustomer.password, 10);
+    }
+      // Update profile image if uploaded
+  if (profileImage) {
+    // Optional: delete old image
+    if (customer.profileImage) {
+      const fs = require('fs');
+      const oldPath = `./uploads/${customer.profileImage}`;
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    customer.profileImage = profileImage.filename;
+  }
+
+  return await this.customerRepository.save(customer);
+
+  }
+
+  //----- Delete customer -------
+// CustomerService.ts
+async deleteCustomer(id: number): Promise<object> {
+  const customer = await this.customerRepository.findOne({
+    where: { id },
+    relations: ['profile', 'bookings'], // load related entities
   });
+
+  if (!customer) throw new NotFoundException('Customer not found');
+
+  await this.customerRepository.remove(customer); // removes entity and triggers cascade on profile + bookings
+ 
+  return { message: `Customer with ID ${id} deleted successfully` };
 }
 
-    //-------- Delete customer account --------
-async deleteCustomerAccount(customerId: number): Promise<object> {
-  // Check if customer exists first
-  const customer = await this.customerRepository.findOneBy({ id: customerId });
-  if (!customer) throw new BadRequestException('Customer not found');
 
-  await this.customerRepository.delete(customerId);
-  return {message:`Customer account with id ${customerId} deleted successfully`};
-}
 
-//---------------get all customers-----------
-    async getAllCustomers(): Promise<CustomerEntity[]> {
-        return await this.customerRepository.find({
-            select: ['id', 'email', 'phoneNumber', 'isActive']
-        });
-    }
 
-    //login customer
-    loginCustomer(loginCustomer: object): object {
-        return { message: 'Customer logged in successfully', data: loginCustomer };
-    }
-    //get customer profile
-    getCustomerProfile(customerId: number): object {
-        return { message: `Profile data for customer ID: ${customerId}`};
-    }  
-    //update customer profile 
-    updateCustomerProfile(customerId: number, updateCustomer: UpdateCustomerDto , idProof: Express.Multer.File ):  object {
-        return { message: `Customer profile with ID: ${customerId} updated successfully`, updatedData: {...updateCustomer} , idProofFile: idProof?.filename};
-    }
-    //get service details
-   getServiceDetails(services: object): object {
-        return { message: 'Service details fetched successfully', data: services };
-    }
-    //book service
-    bookService(bookService: object): object {
-        return { message: 'Service booked successfully', bookingDetails: bookService };
-    }
-    //cancel service booking
-    cancelServiceBooking(serviceId: number):object{
-        return { message: `Service booking with ID: ${serviceId} has been cancelled` };
-    }
-    
 }

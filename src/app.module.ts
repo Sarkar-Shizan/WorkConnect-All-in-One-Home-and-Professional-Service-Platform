@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomerModule } from './customer/customer.module';
-import { AdminModule } from './admin/admin.module';
-import { WorkerModule } from './worker/worker.module';
+import { ProfileModule } from './profile/profile.module';
+import { ServiceBookingModule } from './service-booking/service-booking.module';
+
 
 @Module({
   imports: [
     CustomerModule,
-    AdminModule,
-    WorkerModule,
+    ProfileModule,
+    ServiceBookingModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
