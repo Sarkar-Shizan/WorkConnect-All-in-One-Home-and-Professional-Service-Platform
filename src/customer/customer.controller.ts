@@ -1,10 +1,12 @@
-import {Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UsePipes, UseInterceptors, UploadedFile, ParseIntPipe, Res, ValidationPipe} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Patch, Post, Put, UsePipes, UseInterceptors, UploadedFile, ParseIntPipe, Res,Req, ValidationPipe,UseGuards, UnauthorizedException} from '@nestjs/common';
 import { CustomerService } from './customer.service';
-import { LoginCustomerDto } from './dto/login-customer.dto';
+import { JwtAuthGuard } from './auth/auth.guard';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage, MulterError } from 'multer';
+import { IsOwnerGuard } from 'src/custom/is-owner.guard';
+import { Owner } from 'src/custom/owner.decorator';
 
 @Controller('customer')
 export class CustomerController {
@@ -17,12 +19,6 @@ export class CustomerController {
     return await this.customerService.registerCustomer(dto);
   }
 
-  // 2) POST /customer/login
-  @Post('login')
-  @UsePipes(new ValidationPipe())
-  async loginCustomer(@Body() dto: LoginCustomerDto) {
-    return await this.customerService.loginCustomer(dto);
-  }
 
   // 3) GET /customer/all
   @Get('all')
@@ -30,19 +26,27 @@ export class CustomerController {
     return await this.customerService.getAllCustomers();
   }
 
-  // 4) GET/customer/profile?id=1
+  // 4) GET /customer/profile
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
-  async getCustomerById(@Query('id', ParseIntPipe) id: number) {
-    return await this.customerService.getCustomerById(id);
-  }
+  async getMyProfile(@Req() req) {
+  return await this.customerService.getCustomerById(req.user.id);
+}
+
+
 
   // 5) PUT /customer/:id  (full replace)
+  @UseGuards(JwtAuthGuard,IsOwnerGuard)
+   @Owner('id')
   @Put('replace-profile/:id')
   async replaceCustomer(@Param('id', ParseIntPipe) id: number, @Body() dto: RegisterCustomerDto) {
+  
     return await this.customerService.replaceCustomer(id, dto);
   }
 
   // 6) PATCH /customer/:id   (partial update)
+  @UseGuards(JwtAuthGuard, IsOwnerGuard)
+  @Owner('id')
   @Patch('update-profile/:id')
   @UseInterceptors(FileInterceptor('profileImage', {
   fileFilter: (req, file, cb) => {
@@ -58,14 +62,15 @@ export class CustomerController {
     },
   }),
 }))
-async updateCustomer(
-  @Param('id', ParseIntPipe) id: number, @Body(new ValidationPipe()) dto: UpdateCustomerDto, @UploadedFile() profileImage: Express.Multer.File,) {
+async updateCustomer( @Param('id', ParseIntPipe) id: number, @Body(new ValidationPipe()) dto: UpdateCustomerDto, @UploadedFile() profileImage: Express.Multer.File,) {
   return await this.customerService.updateCustomer(id, dto, profileImage);
 }
 
   // 7) DELETE /customer/:id
-  @Delete('delete-account/:id')
-  async deleteCustomer(@Param('id', ParseIntPipe) id: number) {
+   @UseGuards(JwtAuthGuard, IsOwnerGuard)
+   @Owner('id')
+   @Delete('delete-account/:id')
+   async deleteCustomer(@Param('id', ParseIntPipe) id: number) {
     return await this.customerService.deleteCustomer(id);
   }
   
