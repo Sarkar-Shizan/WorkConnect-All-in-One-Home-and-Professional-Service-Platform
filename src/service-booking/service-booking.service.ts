@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ServiceBookingEntity } from './service-booking.entity';
 import { BookServiceByCustomerDto } from './dto/book-service.dto';
 import { CustomerEntity } from '../customer/customer.entity';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class ServiceBookingService {
@@ -13,6 +14,7 @@ export class ServiceBookingService {
 
     @InjectRepository(CustomerEntity)
     private readonly customerRepository: Repository<CustomerEntity>,
+    private mailerService: MailerService
   ) {}
 
   // Get all bookings for a specific customer
@@ -22,7 +24,7 @@ export class ServiceBookingService {
       relations: ['bookings'],
     });
 
-    if (!customer) throw new NotFoundException('Customer not found');
+    if (!customer) throw new NotFoundException('Customer not available');
 
     return customer.bookings;
   }
@@ -40,6 +42,18 @@ export class ServiceBookingService {
       customer,
     });
 
+    //Booking Success Email Notification
+    await this.mailerService.sendMail({
+    to: customer.email,
+    subject: 'Booking Successful!',
+    html: `
+      <h2>Hello, ${customer.name}!</h2>
+      <p>Your booking request for ${dto.serviceCategory} has been successfully registered for the date ${dto.serviceDate}</p>
+      <p>We will notify you once your service provider is assigned.</p>
+      <p>Thank you for selecting <strong>WorkConnect</strong>!</p>
+    `,
+  });
+
     return await this.bookingRepository.save(booking);
   }
 
@@ -55,6 +69,18 @@ export class ServiceBookingService {
       throw new NotFoundException(`Booking does not belong to customer ${customerId}`);
 
     booking.status = 'cancelled';
+
+     //Booking Cancel Email Notification
+    await this.mailerService.sendMail({
+    to: booking.customer.email,
+    subject: 'Cancel Successful!',
+    html: `
+      <h2>Hello, ${booking.customer.name}!</h2>
+      <p>Your cancel request for service Id:${serviceId} has been successfull.</p>
+      <p>Contact support if you have any questions.</p>
+      <p>Thank you for staying with <strong>WorkConnect</strong>!</p>
+    `,
+  });
 
     return await this.bookingRepository.save(booking);
   }

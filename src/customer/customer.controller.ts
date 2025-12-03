@@ -10,7 +10,9 @@ import { Owner } from 'src/custom/owner.decorator';
 
 @Controller('customer')
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+  constructor(
+    private readonly customerService: CustomerService
+  ) {}
 
   // 1) POST /customer/register  (ValidationPipe applied via global or per-route)
   @Post('register')
@@ -37,7 +39,7 @@ export class CustomerController {
 
   // 5) PUT /customer/:id  (full replace)
   @UseGuards(JwtAuthGuard,IsOwnerGuard)
-   @Owner('id')
+  @Owner('id')
   @Put('replace-profile/:id')
   async replaceCustomer(@Param('id', ParseIntPipe) id: number, @Body() dto: RegisterCustomerDto) {
   
@@ -62,7 +64,7 @@ export class CustomerController {
     },
   }),
 }))
-async updateCustomer( @Param('id', ParseIntPipe) id: number, @Body(new ValidationPipe()) dto: UpdateCustomerDto, @UploadedFile() profileImage: Express.Multer.File,) {
+async updateCustomer( @Param('id', ParseIntPipe) id: number, @Body(new ValidationPipe({transform:true})) dto: UpdateCustomerDto, @UploadedFile() profileImage: Express.Multer.File,) {
   return await this.customerService.updateCustomer(id, dto, profileImage);
 }
 
@@ -79,5 +81,6 @@ async updateCustomer( @Param('id', ParseIntPipe) id: number, @Body(new Validatio
   serveFile(@Param('filename') filename: string, @Res() res) {
     res.sendFile(filename, { root: './uploads' });
   }
+
 
 }

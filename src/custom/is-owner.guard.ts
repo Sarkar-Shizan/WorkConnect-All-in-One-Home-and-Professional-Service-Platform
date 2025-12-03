@@ -8,7 +8,7 @@ export class IsOwnerGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // extracted by JwtAuthGuard
+    const user = request.user; 
     if (!user) throw new UnauthorizedException('User not authenticated');
 
     // get which route param represents the ownerId

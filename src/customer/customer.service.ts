@@ -7,11 +7,12 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import * as bcrypt from 'bcrypt';
 import { ServiceBookingEntity } from '../service-booking/service-booking.entity';
 import { CustomerProfileEntity } from '../profile/profile.entity';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class CustomerService {
   constructor(@InjectRepository(CustomerEntity) private customerRepository: Repository<CustomerEntity>, @InjectRepository(ServiceBookingEntity)
-    private bookingRepository: Repository<ServiceBookingEntity>,@InjectRepository(CustomerProfileEntity) private profileRepo: Repository<CustomerProfileEntity>) {}
+    private bookingRepository: Repository<ServiceBookingEntity>,@InjectRepository(CustomerProfileEntity) private profileRepo: Repository<CustomerProfileEntity>,private mailerService: MailerService) {}
 
    //-----Register customer-------
     async registerCustomer(registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
@@ -27,9 +28,23 @@ export class CustomerService {
     }
   const newCustomer = this.customerRepository.create(registerCustomer);
   const savedCustomer = await this.customerRepository.save(newCustomer);
+
+  // Send welcome email
+   await this.mailerService.sendMail({
+    to: savedCustomer.email,
+    subject: 'Registration Successful!',
+    html: `
+      <h2>Welcome, ${savedCustomer.name}!</h2>
+      <p>Your account has been successfully registered.</p>
+      <p><strong>Email:</strong> ${savedCustomer.email}</p>
+      <p>Thank you for joining <strong>WorkConnect</strong>!</p>
+    `,
+  });
+
+  
+
   return savedCustomer; 
   }
-
 
   //----- Get all customers -------
   async getAllCustomers(): Promise<CustomerEntity[]> {
@@ -59,7 +74,7 @@ export class CustomerService {
     }
   const replacedCustomer = this.customerRepository.merge(customer, registerCustomer);
   if (registerCustomer.password) {
-    replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);// Hash new password if provided
+    replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);
   }
   return await this.customerRepository.save(replacedCustomer);
 }
@@ -78,7 +93,7 @@ export class CustomerService {
     updatedCustomer.password = await bcrypt.hash(updateCustomer.password, 10);
   }
   
-  // Check uniqueness only if email or phoneNumber are provided in the update
+  // Check uniqueness only if email or phoneNumber 
   if (updateCustomer.email || updateCustomer.phoneNumber) {
     const exists = await this.customerRepository.findOne({
       where: [
