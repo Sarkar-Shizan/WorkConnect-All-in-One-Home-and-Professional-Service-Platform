@@ -20,7 +20,7 @@ import { ServiceBookingEntity } from "../service-booking/service-booking.entity"
  @Column()
  password: string;
 
- @Column({ nullable: true })
+ @Column({ nullable: true  })
  profileImage: string;
  
  @BeforeInsert()
