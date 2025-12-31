@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,19 +18,39 @@ export default function Login() {
     setPassword(e.target.value);
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (!email || !password) {
       setError('All fields are required.');
-    } else {
-      setError('');
-    }
+    } 
 
+    
+    setError('');
 
-    console.log('Form submitted:', { email, password });
-    setEmail('');
-    setPassword('');
+    try {
+      const customerLoginData = {
+        email,
+        password
+      };
+      const response = await axios.post("http://localhost:3000/customer/auth/login", customerLoginData);
+      console.log('Login successful:', response.data);
+
+      // Reset form
+      setEmail('');
+      setPassword('');
+      alert('Login successful!');
+
+     //redirect to login page
+     router.push('/dashboard');
+
+    } catch (error: any) {
+  if (error.response && error.response.data) {
+    setError(error.response.data.message || 'Login failed.');
+  } else {
+    setError('Login failed. Please try again.');
+  }
+}
   };
 
   return (

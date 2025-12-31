@@ -16,7 +16,6 @@ export class RegisterCustomerDto {
 
     @IsNotEmpty()
     @MinLength(6, { message: 'Password must be at least 6 characters long' })
-    @Matches(/^.*[a-z].*$/, { message: 'Password must contain at least one lowercase letter' })
     password: string;
    
 }
