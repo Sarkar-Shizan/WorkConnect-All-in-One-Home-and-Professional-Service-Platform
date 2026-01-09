@@ -5,57 +5,94 @@ import { ServiceBookingEntity } from './service-booking.entity';
 import { BookServiceByCustomerDto } from './dto/book-service.dto';
 import { CustomerEntity } from '../customer/customer.entity';
 import { MailerService } from '@nestjs-modules/mailer';
+import { ServiceEntity } from './services.entity';
+import { CreateServiceDto } from './dto/services.dto';
+import { PusherService } from '../pusher/pusher.service';
 
 @Injectable()
 export class ServiceBookingService {
   constructor(
     @InjectRepository(ServiceBookingEntity)
     private readonly bookingRepository: Repository<ServiceBookingEntity>,
-
+    
+    @InjectRepository(ServiceEntity)
+    private serviceRepo: Repository<ServiceEntity>,
     @InjectRepository(CustomerEntity)
     private readonly customerRepository: Repository<CustomerEntity>,
-    private mailerService: MailerService
+    private mailerService: MailerService,
+    private pusherService: PusherService,
+
   ) {}
 
   // Get all bookings for a specific customer
   async getServicesByCustomer(customerId: number) {
-    const customer = await this.customerRepository.findOne({
-      where: { id: customerId },
-      relations: ['bookings'],
-    });
+  const bookings = await this.bookingRepository.find({
+    where: { customer: { id: customerId } },
+    relations: ['service', 'customer'], // include customer if needed
+  });
 
-    if (!customer) throw new NotFoundException('Customer not available');
-
-    return customer.bookings;
+  if (!bookings || bookings.length === 0) {
+    throw new NotFoundException('No bookings found for this customer');
   }
 
-  // Book a service for a specific customer
-  async bookServiceForCustomer(customerId: number, dto: BookServiceByCustomerDto) {
-    const customer = await this.customerRepository.findOne({
-      where: { id: customerId },
-    });
+  // Return full bookings with service entity included
+  return bookings;
+}
 
-    if (!customer) throw new NotFoundException('Customer not found');
 
-    const booking = this.bookingRepository.create({
-      ...dto,
-      customer,
-    });
+ async bookServiceForCustomer(customerId: number, dto: BookServiceByCustomerDto) {
+  const customer = await this.customerRepository.findOne({ where: { id: customerId } });
+  if (!customer) throw new NotFoundException('Customer not found');
 
-    //Booking Success Email Notification
-    await this.mailerService.sendMail({
+  const service = await this.serviceRepo.findOne({ where: { id: dto.serviceId } });
+  if (!service) throw new NotFoundException('Service not found');
+
+  const booking = this.bookingRepository.create({
+    service,
+    serviceAddress: dto.serviceAddress,
+    serviceDate: dto.serviceDate,
+    customer,
+  });
+
+  await this.bookingRepository.save(booking);
+
+  // Send booking email
+  await this.mailerService.sendMail({
     to: customer.email,
     subject: 'Booking Successful!',
     html: `
       <h2>Hello, ${customer.name}!</h2>
-      <p>Your booking request for ${dto.serviceCategory} has been successfully registered for the date ${dto.serviceDate}</p>
-      <p>We will notify you once your service provider is assigned.</p>
-      <p>Thank you for selecting <strong>WorkConnect</strong>!</p>
+      <p>Your booking for <strong>${service.serviceTitle}</strong> has been registered for <strong>${dto.serviceDate}</strong>.</p>
+      <p>Service Provider: ${service.companyName}</p>
+      <p>Thank you for choosing WorkConnect!</p>
     `,
   });
 
-    return await this.bookingRepository.save(booking);
+  await this.pusherService.trigger('bookings', 'booking-created', {
+    message: `New booking by ${customer.name} for ${service.serviceTitle}`,
+    bookingId: booking.id,
+  });
+
+
+  return booking;
+}
+
+//get service by id
+  async getServiceById(serviceId: number) {
+    const service = await this.serviceRepo.findOne({ where: { id: serviceId } });
+    if (!service) throw new NotFoundException('Service not found');
+    return service;
   }
+//get booking by id
+  async getBookingById(bookingId: number) {
+    const booking = await this.bookingRepository.findOne({
+      where: { id: bookingId },
+      relations: ['service', 'customer'],
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    return booking;
+  }
+
 
   // Cancel a booking for a specific customer
   async cancelServiceBookingForCustomer(customerId: number, serviceId: number) {
@@ -69,6 +106,7 @@ export class ServiceBookingService {
       throw new NotFoundException(`Booking does not belong to customer ${customerId}`);
 
     booking.status = 'cancelled';
+    await this.bookingRepository.save(booking);
 
      //Booking Cancel Email Notification
     await this.mailerService.sendMail({
@@ -82,6 +120,26 @@ export class ServiceBookingService {
     `,
   });
 
-    return await this.bookingRepository.save(booking);
+   await this.pusherService.trigger('bookings', 'booking-cancelled', {
+    message: `Booking cancelled by ${booking.customer.name} for service ${serviceId}`,
+    bookingId: booking.id,
+  });
+
+    return booking;
   }
+
+
+  // -------------------
+  // Provider endpoints
+  // -------------------
+
+  createService(dto: CreateServiceDto) {
+    const service = this.serviceRepo.create(dto);
+    return this.serviceRepo.save(service);
+  }
+
+  getAllServices() {
+    return this.serviceRepo.find();
+  }
+
 }

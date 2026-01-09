@@ -1,16 +1,15 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class BookServiceByCustomerDto {
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  serviceCategory: string;
+  serviceId: number; // Reference the selected service
 
   @IsString()
   @IsNotEmpty()
-  serviceAddress: string;
+  serviceAddress: string; // Customer-provided address
 
   @IsString()
   @IsNotEmpty()
-  serviceDate: string; 
-
+  serviceDate: string; // Scheduled date
 }

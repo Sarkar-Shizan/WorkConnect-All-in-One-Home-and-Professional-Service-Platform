@@ -1,98 +1,249 @@
-"use client";
+
+      "use client";
 import Link from "next/link";
-import { useState} from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
 export default function Register() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
-  const handleChangeName = (e:any) => setName(e.target.value);
-  const handleChangeEmail = (e: any) => setEmail(e.target.value);
-  const handleChangePhone = (e: any) => setPhone(e.target.value);
-  const handleChangePassword = (e: any) => setPassword(e.target.value);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = async(e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    // Frontend validation
-   if (!name || !email || !phoneNumber || !password) {
-    setError('All fields are required.');
-    return;
-  }
-  if (name.length < 2) {
-    setError('Name must be at least 2 characters long.');
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    setError('Invalid email format.');
-    return;
-  }
-  if (!/^01\d{9}$/.test(phoneNumber)) {
-    setError('Phone number must start with 01 and be exactly 11 digits long.');
-    return;
-  }
-  if (password.length < 6) {
-    setError('Password must be at least 6 characters long.');
-    return;
-  }
+    if (!name || !email || !phoneNumber || !password) {
+      setError("All fields are required.");
+      return;
+    }
+    if (name.length < 2) {
+      setError("Name must be at least 2 characters long.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Invalid email format.");
+      return;
+    }
+    if (!/^01\d{9}$/.test(phoneNumber)) {
+      setError("Phone number must start with 01 and be 11 digits.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
 
-
-    setError('');
+    setError("");
+    setSuccess("");
 
     try {
-      const customerRegisterData = {
+      await axios.post("http://localhost:3000/customer/register", {
         name,
         email,
         phoneNumber,
-        password
-      };
+        password,
+      });
 
-      const response = await axios.post("http://localhost:3000/customer/register", customerRegisterData);
-      console.log('Registration successful:', response.data);
+      setName("");
+      setEmail("");
+      setPhone("");
+      setPassword("");
 
-      // Reset form
-      setName('');
-      setEmail('');
-      setPhone('');
-      setPassword('');
-      alert('Registration successful! You can now log in.');
+      setSuccess("Registration successful! Redirecting to login...");
 
-     //redirect to login page
-     router.push('/login');
-
-    } catch (error: any) {
-  if (error.response && error.response.data) {
-    setError(error.response.data.message || 'Registration failed.');
-  } else {
-    setError('Registration failed. Please try again.');
-  }}
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Registration failed.");
+    }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "Arial, sans-serif", marginTop: "50px" }}>
-      <h2 style={{ marginBottom: "20px" }}>Registration Page</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <input type="text" placeholder="Name" value={name} onChange={handleChangeName} style={{ fontFamily: "Arial, sans-serif", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} /><br />
-          <input type="email" placeholder="Email" value={email} onChange={handleChangeEmail} style={{ fontFamily: "Arial, sans-serif", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} /><br />
-          <input type="text" placeholder="Phone Number" value={phoneNumber} onChange={handleChangePhone} style={{ fontFamily: "Arial, sans-serif", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} maxLength={11} /><br />
-          <input type="password" placeholder="Password" value={password} onChange={handleChangePassword} style={{ fontFamily: "Arial, sans-serif", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} /><br />
-        </div>
-        <div style={{ textAlign: "center" }}>
-          {error && <p style={{ color: "red", fontSize: "15px" }}>{error}</p>}
-          <button type="submit" style={{ fontFamily: "Arial, sans-serif", color: "white", backgroundColor: "#ff0505", border: "none", padding: "10px 20px", borderRadius: "5px" }}>Register</button>
-        </div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "97vh",
+        background: "linear-gradient(to right, #f0f3c2ff, #eeeeee)"
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          fontFamily: "Arial, sans-serif",
+          border: "1px solid #ccc",
+          padding: "30px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          width: "320px",
+          backgroundColor: "white",
+        }}
+      >{/* ✅ SUCCESS */}
+        {success && (
+          <div
+            style={{
+              backgroundColor: "#d1fae5",
+              color: "#065f46",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              marginBottom: "15px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              border: "1px solid #34d399",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
+            <span>{success}</span>
+          </div>
+        )}
+
+        {/* ❌ ERROR */}
+        {error && <div
+            style={{
+              backgroundColor: "#fad1d1",
+              color: "#f80505",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              marginBottom: "15px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              border: "1px solid #d33434",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
+            <span>{error}</span>
+          </div>}
+
+
+        <h2 style={{ marginBottom: "10px" }}>Register</h2>
+        <span style={{ color: "#7a7676", fontSize: "12px", marginBottom: "20px" }}>- use your email & phone number to register</span>
+
+        
+
+        <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+            marginBottom: "10px",
+            width: "250px",
+          }}
+        />
+
+        <br />
+
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+            marginBottom: "10px",
+            width: "250px",
+          }}
+        />
+
+        <br />
+
+        <input
+          type="text"
+          placeholder="Phone Number"
+          value={phoneNumber}
+          maxLength={11}
+          onChange={(e) => setPhone(e.target.value)}
+          style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+            marginBottom: "10px",
+            width: "250px",
+          }}
+        />
+
+        <br />
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+            width: "250px",
+          }}
+        />
+
+        <br />
+
+        <button
+          type="submit"
+          style={{
+              marginTop: "15px",
+              background: "linear-gradient(to right, #f7e707ff, #eede00ff)",
+              color: "black",
+              padding: "10px",
+              width: "100%",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "16px",
+          }}
+        >
+          Register
+        </button>
       </form>
-      <p>Already have an account?</p>
-      <Link href="/login">
-        <button style={{ fontFamily: "Arial, sans-serif", color: "white", backgroundColor: "#007bff", border: "none", padding: "10px 20px", borderRadius: "5px" }}>Login</button>
-      </Link>
+
+        <span style={{ marginTop: "15px" }}>
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            style={{
+              color: "#eec200",
+              fontWeight: "bold",
+              textDecoration: "none",
+            }}
+          >
+            Login
+          </Link>
+        </span>
+
+        <Link
+          href="/home"
+          style={{
+            color: "#2baed6",
+            marginTop: "15px",
+            fontWeight: "bold",
+            textDecoration: "none",
+          }}
+        >
+          ← Back to Home
+        </Link>
+      </div>
     </div>
   );
 }

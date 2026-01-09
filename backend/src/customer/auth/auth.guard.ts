@@ -7,16 +7,24 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const authHeader = req.headers['authorization'];
 
-    if (!authHeader) throw new UnauthorizedException('Token missing');
+    // Read JWT from HttpOnly cookie instead of Authorization header
+    const token = req.cookies?.access_token;
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('Token missing');
+    }
+
+    // Validate token
     const decoded = await this.authService.validateToken(token);
 
-    if (!decoded) throw new UnauthorizedException('Invalid token');
+    if (!decoded) {
+      throw new UnauthorizedException('Invalid token');
+    }
 
-    req.user = decoded; 
+    // Attach user info to request
+    req.user = decoded;
+
     return true;
   }
 }

@@ -3,9 +3,8 @@ import Link from "next/link";
 export default function Navbar() {
   return (
     <nav style={{
-      background: "linear-gradient(to right, #b4dc92, #b4dc92)",
-      padding: "10px",
-      marginBottom: "20px",
+      background: "linear-gradient(to right, #f7e707ff, #eede00ff)",
+      padding: "15px",
       display: "flex",
       justifyContent: "flex-end",
       gap: "25px"

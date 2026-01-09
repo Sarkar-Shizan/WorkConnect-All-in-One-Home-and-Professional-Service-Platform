@@ -1,73 +1,189 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
-  const handleChangeEmail = (e: any) => {
-    setEmail(e.target.value);
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleChangePassword = (e: any) => {
-    setPassword(e.target.value);
-  };
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await axios.get("http://localhost:3000/customer/profile", {
+          withCredentials: true,
+        });
+        router.push("/dashboard");
+      } catch {
+        // Not logged in
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (!email || !password) {
-      setError('All fields are required.');
-    } 
+      setError("All fields are required.");
+      return;
+    }
 
-    
-    setError('');
+    setError("");
+    setSuccess("");
 
     try {
-      const customerLoginData = {
-        email,
-        password
-      };
-      const response = await axios.post("http://localhost:3000/customer/auth/login", customerLoginData);
-      console.log('Login successful:', response.data);
+      await axios.post(
+        "http://localhost:3000/customer/auth/login",
+        { email, password },
+        { withCredentials: true }
+      );
 
-      // Reset form
-      setEmail('');
-      setPassword('');
-      alert('Login successful!');
+      setEmail("");
+      setPassword("");
 
-     //redirect to login page
-     router.push('/dashboard');
+      setSuccess("Login successful! Redirecting to dashboard...");
 
-    } catch (error: any) {
-  if (error.response && error.response.data) {
-    setError(error.response.data.message || 'Login failed.');
-  } else {
-    setError('Login failed. Please try again.');
-  }
-}
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
+    } catch (err: any) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "Arial, sans-serif", marginTop: "50px" }}>
-      <h2 style={{ marginBottom: "20px" }}>Login Page</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <input type="email" placeholder="Enter Email" name="email" value={email} onChange={handleChangeEmail} style={{ fontFamily: "Arial, sans-serif", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}/><br/>
-        <input type="password" placeholder="Enter Password" name="password" value={password} onChange={handleChangePassword} style={{ fontFamily: "Arial, sans-serif", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}/><br/>
-        </div>
-        <div style={{ textAlign: "center" }}>
-          {error && <p style={{ color: "red", fontSize: "15px" }}>{error}</p>}
-        <button type="submit" style={{ fontFamily: "Arial, sans-serif", color: "white", backgroundColor: "#007bff", border: "none", padding: "10px 20px", borderRadius: "5px" }}>Login</button>
-        </div>
-      </form>
-    <p>Don't have an account?</p>
-    <Link href="/register"><button style={{ fontFamily: "Arial, sans-serif", color: "white", backgroundColor: "#ff0505ff", border: "none", padding: "10px 20px", borderRadius: "5px" }}>Register</button></Link>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "97vh",
+        background: "linear-gradient(to right, #f0f3c2ff, #eeeeee)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "Arial, sans-serif",
+          border: "1px solid #ccc",
+          padding: "30px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+          width: "300px",
+          height: "auto",
+          backgroundColor: "white",
+        }}
+      >
+       { /* ✅ SUCCESS */}
+        {success && (
+          <div
+            style={{
+              backgroundColor: "#d1fae5",
+              color: "#065f46",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              marginBottom: "15px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              border: "1px solid #34d399",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
+            <span>{success}</span>
+          </div>
+        )}
+
+       
+        {/* ❌ ERROR */}
+        {error && <div
+            style={{
+              backgroundColor: "#fad1d1",
+              color: "#f80505",
+              padding: "12px",
+              borderRadius: "10px",
+              display: "flex",
+              alignItems: "center",
+              border: "1px solid #d33434",
+              justifyContent: "center",
+              textAlign: "center",
+              fontSize: "12px",
+            }}
+          >
+            <span>{error}</span>
+          </div>}
+        <h2 style={{ marginBottom: "10px"}}>Login</h2>
+        <span style={{ color: "#7a7676", fontSize: "12px", marginBottom: "20px" }}>- use your email & password to login</span>
+
+        
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="Enter Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+              marginBottom: "10px",
+              width: "250px",
+            }}
+          />
+          <br />
+          <input
+            type="password"
+            placeholder="Enter Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+              width: "250px",
+            }}
+          />
+          <br />
+          <button
+            type="submit"
+            style={{
+              marginTop: "15px",
+              background: "linear-gradient(to right, #f7e707ff, #eede00ff)",
+              color: "black",
+              padding: "10px",
+              width: "100%",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "16px",
+            }}
+          >
+            Login
+          </button>
+        </form>
+
+        <span style={{ marginTop: "15px" }}>Don't have an account?{" "}
+        <Link href="/register" style={{ color: "#eec200", fontWeight: "bold" ,textDecoration:"none",fontSize: "16px"}}>Register</Link></span>
+
+        <Link href="/home" style={{ color: "#2baed6", marginTop: "15px",fontWeight: "bold" ,textDecoration:"none", fontSize: "15px" }}>← Back to Home</Link>
+      </div>
     </div>
   );
 }

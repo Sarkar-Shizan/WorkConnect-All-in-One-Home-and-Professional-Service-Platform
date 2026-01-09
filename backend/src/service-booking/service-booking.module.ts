@@ -4,9 +4,11 @@ import { ServiceBookingEntity } from './service-booking.entity';
 import { ServiceBookingService } from './service-booking.service';
 import { ServiceBookingController } from './service-booking.controller';
 import { CustomerEntity } from '../customer/customer.entity';
+import { ServiceEntity } from './services.entity';
+import { PusherModule } from 'src/pusher/pusher.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ServiceBookingEntity,CustomerEntity])],
+  imports: [TypeOrmModule.forFeature([ServiceBookingEntity,CustomerEntity,ServiceEntity]),PusherModule],
   controllers: [ServiceBookingController],
   providers: [ServiceBookingService]
 

@@ -5,3 +5,9 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+export const logo = {
+    fontSize: "20px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    textDecoration: "none",
+};

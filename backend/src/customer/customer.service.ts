@@ -8,11 +8,12 @@ import * as bcrypt from 'bcrypt';
 import { ServiceBookingEntity } from '../service-booking/service-booking.entity';
 import { CustomerProfileEntity } from '../profile/profile.entity';
 import { MailerService } from '@nestjs-modules/mailer';
+import { PusherService } from '../pusher/pusher.service';
 
 @Injectable()
 export class CustomerService {
   constructor(@InjectRepository(CustomerEntity) private customerRepository: Repository<CustomerEntity>, @InjectRepository(ServiceBookingEntity)
-    private bookingRepository: Repository<ServiceBookingEntity>,@InjectRepository(CustomerProfileEntity) private profileRepo: Repository<CustomerProfileEntity>,private mailerService: MailerService) {}
+    private bookingRepository: Repository<ServiceBookingEntity>,@InjectRepository(CustomerProfileEntity) private profileRepo: Repository<CustomerProfileEntity>,private mailerService: MailerService, private pusherService: PusherService) {}
 
    //-----Register customer-------
     async registerCustomer(registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
@@ -63,19 +64,26 @@ export class CustomerService {
  async replaceCustomer(id: number, registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
   const customer = await this.customerRepository.findOneBy({ id });
   if (!customer) throw new NotFoundException(`Customer with ID ${id} not found`);
+  // Check if email or phone already exists
   const exists = await this.customerRepository.findOne({
     where: [
       { email: registerCustomer.email },
       { phoneNumber: registerCustomer.phoneNumber },
     ],
   });
-  if (exists) {
+  if (exists && exists.id !== id) {
      throw new HttpException('Email or phone number already exists.', 400);
     }
   const replacedCustomer = this.customerRepository.merge(customer, registerCustomer);
   if (registerCustomer.password) {
     replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);
   }
+
+  await this.pusherService.trigger('customers', 'customer-updated', {
+    message: `Customer profile with name ${replacedCustomer.name} has been updated.`,
+    customerId: replacedCustomer.id,
+  });
+  
   return await this.customerRepository.save(replacedCustomer);
 }
 

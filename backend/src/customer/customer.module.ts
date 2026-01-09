@@ -7,9 +7,10 @@ import { CustomerProfileEntity } from '../profile/profile.entity';
 import { ServiceBookingEntity } from '../service-booking/service-booking.entity';
 import { AuthModule } from './auth/auth.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { PusherModule } from 'src/pusher/pusher.module';
 
 @Module({
- imports: [TypeOrmModule.forFeature([CustomerEntity, CustomerProfileEntity,ServiceBookingEntity]),AuthModule, MailerModule.forRoot({
+ imports: [TypeOrmModule.forFeature([CustomerEntity, CustomerProfileEntity,ServiceBookingEntity]),AuthModule,PusherModule, MailerModule.forRoot({
  transport: {
  host: 'smtp.gmail.com',
  port: 465,

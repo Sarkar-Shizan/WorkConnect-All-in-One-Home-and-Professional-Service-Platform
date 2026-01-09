@@ -16,14 +16,15 @@ export class AuthService {
     private mailerService: MailerService
   ) {}
 
-  // Only login generates JWT
-  async login(dto: LoginCustomerDto): Promise<{ access_token: string }> {
+  // Validate credentials and generate token
+  async login(dto: LoginCustomerDto): Promise<{ accessToken: string }> {
     const customer = await this.customerRepo.findOne({ where: { email: dto.email } });
     if (!customer) throw new UnauthorizedException('Customer not found');
 
     const isMatch = await bcrypt.compare(dto.password, customer.password);
     if (!isMatch) throw new UnauthorizedException('Invalid password');
 
+    // Send login notification email
     await this.mailerService.sendMail({
       to: customer.email,
       subject: 'Login Notification',
@@ -35,9 +36,10 @@ export class AuthService {
     });
 
     const payload = { id: customer.id, email: customer.email };
-    return { access_token: await this.jwtService.signAsync(payload) };
-  }
+    const accessToken = await this.jwtService.signAsync(payload);
 
+    return { accessToken };
+  }
 
   async validateToken(token: string) {
     try {
