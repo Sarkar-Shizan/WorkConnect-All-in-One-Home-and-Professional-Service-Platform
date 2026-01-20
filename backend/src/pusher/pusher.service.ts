@@ -17,7 +17,7 @@ export class PusherService {
       key,
       secret,
       cluster,
-      useTLS: true,
+      useTLS: true, // secure https connection
     });
   }
 

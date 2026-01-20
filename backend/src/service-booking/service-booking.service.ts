@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException ,BadRequestException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ServiceBookingEntity } from './service-booking.entity';
@@ -28,7 +28,7 @@ export class ServiceBookingService {
   async getServicesByCustomer(customerId: number) {
   const bookings = await this.bookingRepository.find({
     where: { customer: { id: customerId } },
-    relations: ['service', 'customer'], // include customer if needed
+    relations: ['service', 'customer'], 
   });
 
   if (!bookings || bookings.length === 0) {
@@ -69,7 +69,7 @@ export class ServiceBookingService {
   });
 
   await this.pusherService.trigger('bookings', 'booking-created', {
-    message: `New booking by ${customer.name} for ${service.serviceTitle}`,
+    message: `New booking by ${customer.name} for ${service.serviceTitle} is successfully created.`,
     bookingId: booking.id,
   });
 
@@ -104,6 +104,15 @@ export class ServiceBookingService {
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.customer.id !== customerId)
       throw new NotFoundException(`Booking does not belong to customer ${customerId}`);
+
+     // Check if already cancelled
+  if (booking.status === 'cancelled') {
+    throw new BadRequestException('Booking is already cancelled');
+  }
+
+  // Proceed with cancellation
+  booking.status = 'cancelled';
+  await this.bookingRepository.save(booking);
 
     booking.status = 'cancelled';
     await this.bookingRepository.save(booking);

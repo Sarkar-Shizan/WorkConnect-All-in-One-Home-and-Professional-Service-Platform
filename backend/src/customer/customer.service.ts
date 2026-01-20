@@ -42,8 +42,6 @@ export class CustomerService {
     `,
   });
 
-  
-
   return savedCustomer; 
   }
 
@@ -61,31 +59,49 @@ export class CustomerService {
 
 
   //----- Replace customer -------
- async replaceCustomer(id: number, registerCustomer: RegisterCustomerDto): Promise<CustomerEntity> {
+async replaceCustomer(
+  id: number,
+  dto: RegisterCustomerDto
+): Promise<CustomerEntity> {
   const customer = await this.customerRepository.findOneBy({ id });
-  if (!customer) throw new NotFoundException(`Customer with ID ${id} not found`);
-  // Check if email or phone already exists
-  const exists = await this.customerRepository.findOne({
-    where: [
-      { email: registerCustomer.email },
-      { phoneNumber: registerCustomer.phoneNumber },
-    ],
-  });
-  if (exists && exists.id !== id) {
-     throw new HttpException('Email or phone number already exists.', 400);
+  if (!customer) throw new NotFoundException(`Customer ${id} not found`);
+
+  // Check email separately
+  if (dto.email && dto.email !== customer.email) {
+    const emailExists = await this.customerRepository.findOne({ where: { email: dto.email } });
+    if (emailExists && emailExists.id !== id) {
+      throw new HttpException("Email already exists", 400);
     }
-  const replacedCustomer = this.customerRepository.merge(customer, registerCustomer);
-  if (registerCustomer.password) {
-    replacedCustomer.password = await bcrypt.hash(registerCustomer.password, 10);
   }
 
-  await this.pusherService.trigger('customers', 'customer-updated', {
-    message: `Customer profile with name ${replacedCustomer.name} has been updated.`,
-    customerId: replacedCustomer.id,
+  // Check phone separately
+  if (dto.phoneNumber && dto.phoneNumber !== customer.phoneNumber) {
+    const phoneExists = await this.customerRepository.findOne({ where: { phoneNumber: dto.phoneNumber } });
+    if (phoneExists && phoneExists.id !== id) {
+      throw new HttpException("Phone number already exists", 400);
+    }
+  }
+
+  // Merge updates
+  const updated = this.customerRepository.merge(customer, dto);
+
+  // Hash password if provided
+  if (dto.password) {
+    updated.password = await bcrypt.hash(dto.password, 10);
+  }
+
+  await this.customerRepository.save(updated);
+
+  // Notify via Pusher
+  await this.pusherService.trigger("customers", "profile-updated", {
+    message: `${customer.name} Your Profile updated successfully`,
+    customerId: updated.id,
   });
-  
-  return await this.customerRepository.save(replacedCustomer);
+
+  return updated;
 }
+
+
 
   //----- Update customer -------
   async updateCustomer(id: number,updateCustomer: UpdateCustomerDto, profileImage: Express.Multer.File): Promise<CustomerEntity> {

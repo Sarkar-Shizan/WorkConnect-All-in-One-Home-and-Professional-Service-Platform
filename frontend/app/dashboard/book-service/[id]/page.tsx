@@ -3,14 +3,13 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
-import Notifications from "@/components/Notificaton";
 
 export default function BookServicePage() {
   const router = useRouter();
   const params = useParams();
-  const serviceId = (params.id);
+  const serviceId = params.id;
 
-  const [service, setService] = useState<any>(null);
+  const [service, setService] = useState<any>("");
   const [customerId, setCustomerId] = useState(0);
   const [serviceAddress, setServiceAddress] = useState("");
   const [serviceDate, setServiceDate] = useState("");
@@ -18,12 +17,12 @@ export default function BookServicePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Fetch the selected service
     const fetchService = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/services/details/" + serviceId, {
-          withCredentials: true,
-        });
+        const res = await axios.get(
+          "http://localhost:3000/services/details/" + serviceId,
+          { withCredentials: true }
+        );
         setService(res.data);
       } catch (err) {
         console.error(err);
@@ -31,42 +30,35 @@ export default function BookServicePage() {
       }
     };
 
-    // Fetch customer profile to get customerId
     const fetchCustomer = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/customer/profile", {
+        const res = await axios.get("http://localhost:3000/customer/profile", { //get this customer by token
           withCredentials: true,
         });
         setCustomerId(res.data.id);
-      } catch (err) {
-        console.error(err);
+      } catch {
         router.push("/login");
       }
     };
 
     fetchService();
     fetchCustomer();
-  }, [serviceId, router]);
+  }, [serviceId, router]); //the same page component stays mounted, but serviceId changes----any value used inside useEffect that comes from outside should be listed as a dependency including router
 
   const handleBook = async (e: any) => {
     e.preventDefault();
-
     if (!serviceAddress || !serviceDate) {
       setError("Please fill all fields");
       return;
     }
 
     try {
-      const bookingData = {
-        serviceId: service.id, // Pass the selected service ID
-        serviceAddress,
-        serviceDate,
-      };
-
+      const bookingData = { serviceId: service.id, serviceAddress, serviceDate };
       const res = await axios.post(
-        "http://localhost:3000/services/book-service/" + customerId, bookingData, {
-        withCredentials: true
-      });
+        "http://localhost:3000/services/book-service/" + customerId,
+        bookingData,
+        { withCredentials: true }
+      );
 
       setMessage(res.data.message || "Service booked successfully!");
       setServiceAddress("");
@@ -79,59 +71,67 @@ export default function BookServicePage() {
     }
   };
 
-  if (!service) return <p>Loading service details...</p>;
+  if (!service)
+    return <p className="text-center mt-10 text-gray-500">Loading service details...</p>;
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <Notifications />
-      <h2>Book Service: {service.serviceTitle}</h2>
-      <p>Category: {service.serviceCategory}</p>
-      <p>Price: ${service.price}</p>
-      <p>Company: {service.companyName}</p>
+    <div className="ml-64 px-6 py-8 bg-gray-50 min-h-screen flex flex-col items-center">
 
-      <form
-        onSubmit={handleBook}
-        style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}
-      >
-        <input
-          type="text"
-          placeholder="Service Address"
-          value={serviceAddress}
-          onChange={(e) => setServiceAddress(e.target.value)}
-          style={inputStyle}
-        />
-        <input
-          type="date"
-          value={serviceDate}
-          onChange={(e) => setServiceDate(e.target.value)}
-          style={inputStyle}
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {message && <p style={{ color: "green" }}>{message}</p>}
-        <button type="submit" style={buttonStyle}>Book Service</button>
-      </form>
+      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
+        {/* Left Side: Service Info & Image */}
+        <div className="md:w-1/2 bg-yellow-50 p-6 flex flex-col justify-center items-center">
+          <img
+            src="/images/Work.png"
+            alt="Service"
+            className="h-64 w-full object-cover rounded-lg mb-6"/>
 
-      <Link href="/dashboard/services">
-        <button style={{ ...buttonStyle, marginTop: "20px", backgroundColor: "#007bff" }}>
-          Back to Services
-        </button>
-      </Link>
+          <div className="text-center md:text-left">
+            <h2 className="text-3xl font-bold mb-2">{service.serviceTitle}</h2>
+            <p className="text-gray-600 mb-1">Category: {service.serviceCategory}</p>
+            <p className="text-gray-600 mb-1">Price: {service.price} Tk</p>
+            <p className="text-gray-600">Company: {service.companyName}</p>
+          </div>
+        </div>
+
+        {/* Right Side: Booking Form */}
+        <div className="md:w-1/2 p-8 flex flex-col justify-center items-center md:items-start">
+          <h2 className="text-2xl font-bold mb-6 text-center md:text-left">
+            Book Your Service
+          </h2>
+
+          <form className="flex flex-col w-full max-w-md gap-4" onSubmit={handleBook}>
+            <input
+              type="text"
+              placeholder="Service Address"
+              value={serviceAddress}
+              onChange={(e) => setServiceAddress(e.target.value)}
+              className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"/>
+            <input
+              type="date"
+              value={serviceDate}
+              onChange={(e) => setServiceDate(e.target.value)}
+              className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"/>
+
+            {error && <p className="text-red-500 font-medium flex justify-center">{error}</p>}
+            {message && <p className="text-green-500 font-medium flex justify-center">{message}</p>}
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-300 text-black font-semibold rounded-full hover:from-yellow-500 hover:to-yellow-400 transition-all duration-200">
+              Book Service
+            </button>
+
+            <Link href="/dashboard/services" className="w-full">
+              <button
+                type="button"
+                className="w-full py-3 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300 transition-all duration-200">
+                Back to Services
+              </button>
+            </Link>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
 
-const inputStyle = {
-  padding: "8px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-  width: "300px",
-};
-
-const buttonStyle = {
-  padding: "10px 20px",
-  borderRadius: "5px",
-  backgroundColor: "#28a745",
-  color: "white",
-  border: "none",
-  cursor: "pointer",
-};

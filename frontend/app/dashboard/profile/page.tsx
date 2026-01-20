@@ -1,13 +1,13 @@
 "use client";
-import Link from "next/link";
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function Profile() {
   const router = useRouter();
 
-  // State variables
   const [id, setId] = useState(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -16,139 +16,133 @@ export default function Profile() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // Change handlers
-  const handleChangeName = (e: any) => setName(e.target.value);
-  const handleChangeEmail = (e: any) => setEmail(e.target.value);
-  const handleChangePhone = (e: any) => setPhone(e.target.value);
-  const handleChangePassword = (e: any) => setPassword(e.target.value);
+  useEffect(() => {
+    const fetchProfile = async () => { //async allows you to use await inside the function
+      try {
+        const res = await axios.get("http://localhost:3000/customer/profile", { //await pauses the function until the server responds
+          withCredentials: true,
+        });
 
- useEffect(() => {
+        setId(res.data.id);
+        setName(res.data.name);
+        setEmail(res.data.email);
+        setPhone(res.data.phoneNumber);
+      } catch (err) {
+        router.push("/login");
+      }
+    };
 
-  // Define async function inside useEffect
-  const fetchProfile = async () => {
-    try {
-      const response = await axios.get('http://localhost:3000/customer/profile', {
-        withCredentials: true,
-      });
+    fetchProfile();
+  }, [router]);
 
-      setId(response.data.id);
-      setName(response.data.name);
-      setEmail(response.data.email);
-      setPhone(response.data.phoneNumber);
-      setPassword(""); // never prefill password
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch profile. Please login again.");
-      router.push("/login");
-    }
-  };
-
-  fetchProfile();
-}, [router]);
-
-  // Update profile
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+// Frontend validation
 
-    // Frontend validation
-    if (!name || !email || !phoneNumber) {
-      setError("Name, Email, and Phone Number are required.");
-      return;
-    }
-    if (name.length < 2) {
-      setError("Name must be at least 2 characters long.");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Invalid email format.");
-      return;
-    }
-    if (!/^01\d{9}$/.test(phoneNumber)) {
-      setError("Phone number must start with 01 and be exactly 11 digits.");
-      return;
-    }
-    if (password && password.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return;
-    }
-
-    setError("");
+if (name.length < 2) {
+ toast.error("Name must be at least 2 characters long.");
+  return;
+}
+if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+ toast.error("Invalid email format.");
+  return;
+}
+if (!/^01\d{9}$/.test(phoneNumber)) {
+  toast.error("Phone number must start with 01 and be exactly 11 digits.");
+  return;
+}
+if (password && password.length < 6) {
+  toast.error("Password must be at least 6 characters long.");
+  return;
+}
+setMessage("");
 
     try {
       const updateData: any = { name, email, phoneNumber };
       if (password) updateData.password = password;
 
-      const response = await axios.put('http://localhost:3000/customer/replace-profile/' + id, updateData, {
-        withCredentials: true,
-      });
-
-      setMessage(response.data.message || "Profile updated successfully!");
+      const res = await axios.put(
+        "http://localhost:3000/customer/replace-profile/" + id,
+        updateData,
+        { withCredentials: true }
+      );
       setPassword("");
+      setError("");
     } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.message || "Update failed");
+      toast.error(err.response?.data?.message || "Update failed");
     }
   };
 
+  const handleDeleteProfile = async () => {
+  const ok = confirm("Are you sure you want to delete your profile? This cannot be undone.");
+  if (!ok) return;
+
+  try {
+    await axios.delete("http://localhost:3000/customer/delete-account/" + id, {
+      withCredentials: true,
+    });
+
+    toast.success("Profile deleted successfully.");
+    router.push("/home"); 
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || "Delete failed");
+  }
+};
+
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "50px", marginBottom: "50px", fontFamily: "Arial, sans-serif" }}>
-      <h2 style={{ marginBottom: "20px" }}>Profile Page</h2>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={handleChangeName}
-          style={inputStyle}
-        /><br />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={handleChangeEmail}
-          style={inputStyle}
-        /><br />
-        <input
-          type="text"
-          placeholder="Phone Number"
-          value={phoneNumber}
-          onChange={handleChangePhone}
-          style={inputStyle}
-          maxLength={11}
-        /><br />
-        <input
-          type="password"
-          placeholder="Enter new password (leave blank to keep old)"
-          value={password}
-          onChange={handleChangePassword}
-          style={inputStyle}
-        /><br />
-        {error && <p style={{ color: "red", fontSize: "15px" }}>{error}</p>}
-        {message && <p style={{ color: "green", fontSize: "15px" }}>{message}</p>}
-        <button type="submit" style={buttonStyle}>Update Profile</button>
-      </form>
-      <p style={{ marginTop: "20px" }}>Want to go back?</p>
-      <Link href="/dashboard">
-        <button style={{ ...buttonStyle, backgroundColor: "#007bff", marginTop: "10px" }}>Dashboard</button>
-      </Link>
+    <div className="ml-64 px-6 py-5 bg-gray-50 flex justify-center">
+      <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-6">
+
+        <h2 className="text-3xl font-bold text-center text-yellow-500 mb-8">Update Profile</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border border-yellow-400  rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border border-yellow-400  rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
+
+          <input
+            type="text"
+            placeholder="Phone Number"
+            value={phoneNumber}
+            onChange={(e) => setPhone(e.target.value)}
+            maxLength={11}
+            className="w-full px-4 py-2 border border-yellow-400  rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
+
+          <input
+            type="password"
+            placeholder="New Password (optional)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border border-yellow-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
+
+          <button
+            type="submit"
+            className="w-full py-2 bg-gradient-to-r from-yellow-400 to-yellow-300 hover:from-yellow-500 hover:to-yellow-400 text-black font-semibold rounded-full transition">
+            Update 
+          </button>
+
+            <button
+            type="button"
+            onClick={handleDeleteProfile}
+            className="w-full py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-full transition">
+            Delete Profile
+            </button>
+
+        </form>
+
+       
+      </div>
     </div>
   );
 }
-
-const inputStyle = {
-  fontFamily: "Arial, sans-serif",
-  padding: "8px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-  width: "250px",
-};
-
-const buttonStyle = {
-  fontFamily: "Arial, sans-serif",
-  color: "white",
-  backgroundColor: "#28a745",
-  border: "none",
-  padding: "10px 20px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};

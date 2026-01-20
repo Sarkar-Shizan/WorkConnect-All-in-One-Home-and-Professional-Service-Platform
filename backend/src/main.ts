@@ -1,11 +1,11 @@
-import cookieParser from 'cookie-parser'; // <- Correct CommonJS import
+import cookieParser from 'cookie-parser'; 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(cookieParser()); // <-- this works now
+  app.use(cookieParser()); 
 
   app.enableCors({
     origin: 'http://localhost:4200',

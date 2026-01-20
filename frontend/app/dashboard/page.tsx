@@ -1,91 +1,53 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
-import Notifications from "@/components/Notificaton";
+import { FiUser, FiTool, FiClock } from "react-icons/fi"; // Feather icons
 
-export default function Dashboard() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  // Check authentication using HttpOnly cookie
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await axios.get("http://localhost:3000/customer/profile", {
-          withCredentials: true, // required for HttpOnly cookie
-        });
-        setAuthorized(true);
-      } catch (err) {
-        console.error("Not authorized:", err);
-        router.push("/login");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (loading) return <p>Loading...</p>;
-  if (!authorized) return null;
-
-  // Logout function
-  const handleLogout = async () => {
-    try {
-      await axios.post(
-        "http://localhost:3000/customer/auth/logout",
-        {},
-        { withCredentials: true }
-      );
-      router.push("/login");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
-
+export default function DashboardPage() {
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      {/* Notifications */}
-      <Notifications />
+    <div className="ml-64 px-6 py-8 bg-gray-50 min-h-screen">
+      <h1 className="text-4xl font-bold text-gray-800 mb-3">
+        Welcome to your Dashboard
+      </h1>
+      <p className="text-gray-600 text-lg mb-10">
+        Manage your profile, book services, and view your service history.
+      </p>
 
-      <h1>Dashboard</h1>
-      <p>Select an option:</p>
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          marginTop: "30px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link href="/dashboard/profile">
-          <button style={buttonStyle}>Profile</button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Profile Card */}
+        <Link
+          href="/dashboard/profile"
+          className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center justify-center
+                     hover:shadow-xl">
+          <FiUser className="text-4xl text-yellow-500 mb-3" />
+          <h3 className="text-2xl font-semibold mb-2">Profile</h3>
+          <p className="text-gray-500 text-center">
+            View and update your personal information
+          </p>
         </Link>
-        <Link href="/dashboard/services">
-          <button style={buttonStyle}>Available Services</button>
+
+        {/* Services Card */}
+        <Link
+          href="/dashboard/services"
+          className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center justify-center
+                    hover:shadow-xl ">
+          <FiTool className="text-4xl text-yellow-500 mb-3" />
+          <h3 className="text-2xl font-semibold mb-2">Services</h3>
+          <p className="text-gray-500 text-center">
+            Browse and book available services
+          </p>
         </Link>
-        <Link href="/dashboard/services-history">
-          <button style={buttonStyle}>Booking History</button>
+
+        {/* Booking History Card */}
+        <Link
+          href="/dashboard/services-history"
+          className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center justify-center
+                     hover:shadow-xl">
+          <FiClock className="text-4xl text-yellow-500 mb-3" />
+          <h3 className="text-2xl font-semibold mb-2">Booking History</h3>
+          <p className="text-gray-500 text-center">
+            Track all your booked services
+          </p>
         </Link>
-        <button
-          style={{ ...buttonStyle, backgroundColor: "#dc3545" }}
-          onClick={handleLogout}
-        >
-          Logout
-        </button>
       </div>
     </div>
   );
 }
-
-const buttonStyle = {
-  padding: "10px 20px",
-  borderRadius: "5px",
-  backgroundColor: "#007bff",
-  color: "white",
-  border: "none",
-  cursor: "pointer",
-};

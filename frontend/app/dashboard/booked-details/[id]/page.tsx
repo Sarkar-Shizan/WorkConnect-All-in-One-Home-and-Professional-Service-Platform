@@ -4,94 +4,119 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function BookedServiceDetails() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>(); // booking ID
 
-  const [booking, setBooking] = useState<any>(null);
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState<any>("");
+  const [customerId, setCustomerId] = useState<number | null>(null);
+  const [error, setError] = useState("");
   const [authorized, setAuthorized] = useState(false);
 
-  /* ========= Fetch Booking ========= */
+  //Fetch Booking
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        // Backend checks the HttpOnly cookie and returns 401 if not logged in
-        await axios.get("http://localhost:3000/customer/profile", {
+        // Get customer profile
+        const profileRes = await axios.get("http://localhost:3000/customer/profile", {
           withCredentials: true,
         });
-        setAuthorized(true); // authorized if no error
-        const res = await axios.get(
-          "http://localhost:3000/services/booking/" + id,
-          { withCredentials: true } // important for HttpOnly cookie
-        );
+        setAuthorized(true); //user is authenticated. It’s safe to render the page.
+        setCustomerId(profileRes.data.id);
 
+        //Get booking details(here it maps the all booking by booking id for the authorized customer)
+        const res = await axios.get(
+          "http://localhost:3000/services/booking/"+ id,
+          { withCredentials: true }
+        );
         setBooking(res.data);
       } catch (err: any) {
         console.error(err);
         setError("Failed to fetch booking details.");
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchBooking();
   }, [id, router]);
 
-  /* ========= UI States ========= */
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (!booking) return <p>No booking details found.</p>;
+         //Cancel Booking
+   const handleCancel = async () => {
+    if (!customerId || !booking) return;
+
+    if (booking.status === "cancelled") {
+      toast.error("This booking is already cancelled.");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to cancel this service?")) return;// confirm is built in browser dialog like alert with ok--cancel
+
+    try {
+      const res = await axios.patch(
+        "http://localhost:3000/services/cancel-service/"+ customerId +"/"+ booking.id,
+        { withCredentials: true }
+      );
+
+      // Update local state
+      setBooking({ ...booking, status: "cancelled" });
+     
+    } catch (err: any) {
+      console.error(err.response?.data || err);
+      alert(err.response?.data?.message || "Failed to cancel service");
+    }
+  };
+
+
+  if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
+  if (!booking) return <p className="text-center mt-10 text-gray-500">No booking details found.</p>;
   if (!authorized) return null;
 
-  /* ========= JSX ========= */
+  //JSX
   return (
-    <div style={containerStyle}>
-      <h2>
-        <Link
-          href={"/dashboard/book-service/" + booking.service.id}
-          style={linkStyle}
-        >
-          {booking.service.serviceTitle}
-        </Link>
-      </h2>
+    <div className="ml-64 px-6 py-8 bg-gray-50 min-h-screen">
+      <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6">
+        <h2 className="text-3xl font-bold text-center text-yellow-500 mb-8">
+          <Link href={`/dashboard/book-service/${booking.service.id}`} className="hover:underline">
+            {booking.service.serviceTitle}
+          </Link>
+        </h2>
 
-      <p><strong>Category:</strong> {booking.service.serviceCategory}</p>
-      <p><strong>Description:</strong> {booking.service.description}</p>
-      <p><strong>Price:</strong> ${booking.service.price}</p>
-      <p><strong>Company:</strong> {booking.service.companyName}</p>
-      <p>
-        <strong>Service Date:</strong>{" "}
-        {new Date(booking.serviceDate).toLocaleDateString()}
-      </p>
-      <p><strong>Service Address:</strong> {booking.serviceAddress}</p>
-      <p><strong>Status:</strong> {booking.status}</p>
+        <div className="space-y-2 text-gray-700">
+          <p><span className="font-semibold">Category:</span> {booking.service.serviceCategory}</p>
+          <p><span className="font-semibold">Description:</span> {booking.service.description}</p>
+          <p><span className="font-semibold">Price:</span> ${booking.service.price}</p>
+          <p><span className="font-semibold">Company:</span> {booking.service.companyName}</p>
+          <p><span className="font-semibold">Service Date:</span> {new Date(booking.serviceDate).toLocaleDateString()}</p>
+          <p><span className="font-semibold">Service Address:</span> {booking.serviceAddress}</p>
+          <p><span className="font-semibold">Status:</span> {booking.status}</p>
+        </div>
 
-      <Link href="/dashboard/services-history">
-        <button style={buttonStyle}>Back to History</button>
-      </Link>
+        <div className="mt-6 flex justify-between items-center flex-wrap gap-2">
+          <Link href="/dashboard/services-history">
+            <button className="px-5 py-2 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transition">
+              Back to History
+            </button>
+          </Link>
+
+          <Link href={`/dashboard/book-service/${booking.service.id}`}>
+            <button className="px-5 py-2 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transition">
+              Book Again
+            </button>
+          </Link>
+
+          <button
+            onClick={handleCancel}
+            disabled={booking.status === "cancelled"}
+            className={`px-5 py-2 text-black font-semibold rounded-full transition
+              ${booking.status === "cancelled"
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-red-400 hover:bg-red-500"
+              }`}>
+            {booking.status === "cancelled" ? "Cancelled" : "Cancel"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-
-/* ========= Styles ========= */
-const containerStyle = {
-  padding: "20px",
-  fontFamily: "Arial, sans-serif",
-};
-
-const linkStyle = {
-  color: "#007bff",
-  textDecoration: "none",
-};
-
-const buttonStyle = {
-  padding: "10px 20px",
-  borderRadius: "5px",
-  backgroundColor: "#007bff",
-  color: "white",
-  border: "none",
-  cursor: "pointer",
-};

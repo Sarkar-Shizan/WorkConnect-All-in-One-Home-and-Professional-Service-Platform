@@ -9,115 +9,70 @@ export default function ServicesHistory() {
   const router = useRouter();
 
   const [bookedServices, setBookedServices] = useState<any[]>([]);
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authorized, setAuthorized] = useState<boolean>(false);
+  const [customerId, setCustomerId] = useState<number | null>(null);
+  const [error, setError] = useState("");
 
-  /* ========= Fetch History ========= */
+  // Fetch booked services and customerId
   useEffect(() => {
     const fetchServiceHistory = async () => {
       try {
-        // Fetch customer profile (HttpOnly cookie sent automatically)
         const profileRes = await axios.get("http://localhost:3000/customer/profile", {
-          withCredentials: true, // important for HttpOnly cookie
-        });
-        setAuthorized(true);
-        const customerId = profileRes.data.id;
-
-        // Fetch booked services for this customer
-        const res = await axios.get("http://localhost:3000/services/" + customerId, {
-          withCredentials: true, // cookie sent automatically
+          withCredentials: true,
         });
 
-       
+        const customer = profileRes.data;
+        setCustomerId(customer.id);
+
+        const res = await axios.get("http://localhost:3000/services/"+ customer.id, {
+          withCredentials: true,
+        });
 
         setBookedServices(res.data);
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
-        setError("Failed to fetch services. Please login again.");
-        router.push("/login"); // redirect if unauthorized
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchServiceHistory();
   }, [router]);
 
-  /* ========= JSX ========= */
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (!authorized) return null;
+  if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
 
   return (
-    <div style={containerStyle}>
-      <h2 style={{ marginBottom: "20px" }}>My Services History</h2>
+    <div className="ml-64 px-6 py-8 bg-gray-50 min-h-screen flex flex-col items-center">
+      <h2 className="text-3xl font-bold text-yellow-600 mb-8">My Services History</h2>
 
       {bookedServices.length === 0 ? (
-        <p>No services booked yet.</p>
+        <p className="text-gray-500 text-center">No services booked yet.</p>
       ) : (
-        <ul style={listStyle}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-5xl">
           {bookedServices.map((booking) => (
-            <li key={booking.id} style={listItemStyle}>
-              <Link
-                href={"/dashboard/booked-details/" + booking.id}
-                style={linkStyle}
-              >
-                {booking.service.serviceTitle}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+            <div
+              key={booking.id}
+              className="bg-white rounded-xl shadow-md p-5 flex flex-col justify-between
+                         hover:shadow-xl">
+              {/* Card click → details */}
+              <Link href={`/dashboard/booked-details/${booking.id}`}>
+                <div className="space-y-2 cursor-pointer flex flex-col items-center">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    {booking.service.serviceTitle}
+                  </h3>
+                  <p className="text-gray-600">Category: {booking.service.serviceCategory}</p>
+                  <p className="text-gray-600">Price: ${booking.service.price}</p>
+                  <p className="text-gray-600">Company: {booking.service.companyName}</p>
 
-      <Link href="/dashboard">
-        <button style={dashboardButtonStyle}>Dashboard</button>
-      </Link>
+                  <span className="block mt-4 w-full text-center py-2 bg-gradient-to-r
+                                   from-yellow-400 to-yellow-300
+                                   hover:from-yellow-500 hover:to-yellow-400
+                                   text-black font-semibold rounded-full">
+                    View Details
+                  </span>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
-/* ========= Styles ========= */
-const containerStyle = {
-  display: "flex",
-  flexDirection: "column" as const,
-  alignItems: "center",
-  marginTop: "50px",
-  fontFamily: "Arial, sans-serif",
-};
-
-const listStyle = {
-  listStyle: "none",
-  padding: 0,
-  width: "100%",
-  maxWidth: "500px",
-};
-
-const listItemStyle = {
-  marginBottom: "10px",
-  padding: "10px",
-  border: "1px solid #ccc",
-  borderRadius: "5px",
-};
-
-const linkStyle = {
-  color: "#007bff",
-  textDecoration: "none",
-  fontWeight: "bold",
-  fontSize: "16px",
-};
-
-const buttonStyle = {
-  fontFamily: "Arial, sans-serif",
-  color: "white",
-  border: "none",
-  padding: "10px 20px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const dashboardButtonStyle = {
-  ...buttonStyle,
-  backgroundColor: "#007bff",
-  marginTop: "20px",
-};
