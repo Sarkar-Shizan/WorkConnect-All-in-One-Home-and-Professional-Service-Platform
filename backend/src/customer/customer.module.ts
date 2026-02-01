@@ -12,13 +12,7 @@ import { PusherModule } from 'src/pusher/pusher.module';
 @Module({
  imports: [TypeOrmModule.forFeature([CustomerEntity, CustomerProfileEntity,ServiceBookingEntity]),AuthModule,PusherModule, MailerModule.forRoot({
  transport: {
- host: 'smtp.gmail.com',
- port: 465,
- ignoreTLS: true,
- secure: true,
- auth: {
- user: 'shizansarkar@gmail.com',
- pass: 'jgsn vdbp ltzm nvoj'
+
  }
 }
 })

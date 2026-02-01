@@ -11,14 +11,7 @@ import { ServiceBookingModule } from './service-booking/service-booking.module';
     ProfileModule,
     ServiceBookingModule,
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '1234',
-      database: 'WorkConnect',
-      autoLoadEntities: true,
-      synchronize: true,
+     
     }),
   ],
   controllers: [],
